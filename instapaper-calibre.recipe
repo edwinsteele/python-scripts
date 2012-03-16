@@ -68,71 +68,27 @@ class AdvancedUserRecipe1299694372(BasicNewsRecipe):
 
         for feedobj in lfeeds:
             feedtitle, feedurl = feedobj
-            self.report_progress(0, _('Fetching feed')+' %s...'%(feedtitle if feedtitle else feedurl))
+            self.report_progress(0, 'Fetching feed' + ' %s...' % \
+                (feedtitle if feedtitle else feedurl))
             articles = []
-
-            #folder page
-            current_page = 1
-            
-            #so we run the first time
-            articles_on_page = 1
-			
-            while articles_on_page>0:
-                soup = self.index_to_soup(feedurl+u'/'+str(current_page))
-
-                #get and count number of items on current page
-                items = soup.findAll('a', attrs={'class':'actionButton textButton'})
-                cleanup = soup.findAll('a', attrs={'class':'actionButton archiveButton'})
-                
-                #Add cleanup items
-                for clean_item in cleanup:
-                    self.cleanup_items.append(clean_item);
-                
-                articles_on_page = len(items)
-                
-                # Add each item
-                for item in items:
-                    description = self.tag_to_string(item.div)
-                    #print atag
-                    #sys.exit()
-                    if item and item.has_key('href'):
-                        url         = item['href']
-                        articles.append({
-                                         'url'        :url
-                                        })                    
-                
-                current_page+=1
-                
-            #Don't append empty feeds
-            if len(articles)!=0:
-                totalfeeds.append((feedtitle, articles))
-        
-        if len(totalfeeds)==0:
-            return None
-        else:
-            return totalfeeds
+            soup = self.index_to_soup(feedurl)
+            for atag in soup.findAll('a', attrs={'class':'actionButton textButton'}):
+                if atag.has_key('href'):
+                    articles.append({'url':atag["href"]})
+            totalfeeds.append((feedtitle, articles))
+        return totalfeeds
 
     def print_version(self, url):
         return 'http://www.instapaper.com' + url
 
     def populate_article_metadata(self, article, soup, first):
-        #adds the title to the metadata
         wordCount = len(re.split("\W+", str(soup.find(id="story"))))
         article.title  = "%s (%s words)" % \
           (soup.find('title').contents[0].strip(), wordCount)
 
     def postprocess_html(self, soup, first_fetch):
-        # Controlbar container just gets in the way
         if self.add_title:
-          #adds the title to each story, as it is not always included
           for link_tag in soup.findAll(attrs={"id" : "story"}):
               link_tag.insert(0,'<h1>'+soup.find('title').contents[0].strip()+'</h1>')
         return soup
 
-    def cleanup(self):
-        if self.archive:
-            self.report_progress(0, "Archiving articles...")
-            # Clean up each item
-            for cleanup_item in self.cleanup_items:
-                self.report_progress(0, "Cleaning up... : " + self.INDEX+cleanup_item['href']) 
-                self.browser.open(self.INDEX+cleanup_item['href']);
