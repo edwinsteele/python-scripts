@@ -1,5 +1,4 @@
-import urllib, sys, re
-from calibre import strftime
+import re
 from calibre.web.feeds.news import BasicNewsRecipe
 
 class AdvancedUserRecipe1299694372(BasicNewsRecipe):
@@ -44,9 +43,9 @@ class AdvancedUserRecipe1299694372(BasicNewsRecipe):
     LOGIN                 = INDEX + u'/user/login'
     
     if include_liked:
-        feeds = feeds+[(u'Instapaper Liked', u'http://www.instapaper.com/starred')]
+        feeds = feeds+[(u'Instapaper Liked', INDEX + u'/starred')]
 
-    feeds = feeds+[(u'Instapaper Unread', u'http://www.instapaper.com/u')]
+    feeds = feeds+[(u'Instapaper Unread', INDEX + u'/u')]
     feeds.reverse()
     
     cleanup_items = []
@@ -79,16 +78,21 @@ class AdvancedUserRecipe1299694372(BasicNewsRecipe):
         return totalfeeds
 
     def print_version(self, url):
-        return 'http://www.instapaper.com' + url
+        return self.INDEX + url
 
-    def populate_article_metadata(self, article, soup, first):
+    def populate_article_metadata(self, article, soup, first_fetch):
         wordCount = len(re.split("\W+", str(soup.find(id="story"))))
+        if wordCount < 10:
+            # We probably have one the content in a second body tag
+            bodies = soup.findAll("body")
+            if len(bodies) > 1:
+                wordCount = len(re.split("\W+", str(bodies[1]))
         article.title  = "%s (%s words)" % \
           (soup.find('title').contents[0].strip(), wordCount)
 
     def postprocess_html(self, soup, first_fetch):
         if self.add_title:
-          for link_tag in soup.findAll(attrs={"id" : "story"}):
-              link_tag.insert(0,'<h1>'+soup.find('title').contents[0].strip()+'</h1>')
+            for link_tag in soup.findAll(attrs={"id" : "story"}):
+                link_tag.insert(0, "<h1>%s</h1>" % (soup.find('title').contents[0].strip(),))
         return soup
 
