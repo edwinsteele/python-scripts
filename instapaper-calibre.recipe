@@ -5,6 +5,9 @@ class AdvancedUserRecipe1299694372(BasicNewsRecipe):
     # Derived from upstream recipe at:
     # http://bazaar.launchpad.net/~kovid/calibre/trunk/view/head:/recipes/instapaper.recipe
     # Original authors: Darko Miletic, Stanislav Khromov
+    #
+    # Adds word count, title escaping, and removal of a bit more cruft that
+    #  can end up in the e-book.
     title = u'Alternative Instapaper'
     __author__ = 'Edwin Steele, Darko Miletic, Stanislav Khromov'
     publisher = 'Instapaper.com'

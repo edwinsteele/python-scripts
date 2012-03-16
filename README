@@ -1,2 +1,6 @@
 slashdotRssCreator.cgi: full text rss feeds from slashdot. Likely to have
   broken if slashdot has altered their front page since it was written.
+
+instapaper-calibre.recipe: An enhanced calibre (http://calibre-ebook.com)
+  recipe for converting an instapaper reading list into an ePub e-book.
+  Built on the standard calibre instapaper recipe.
