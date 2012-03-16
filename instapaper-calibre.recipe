@@ -1,4 +1,4 @@
-import re
+import HTMLParser, re
 from calibre.web.feeds.news import BasicNewsRecipe
 
 class AdvancedUserRecipe1299694372(BasicNewsRecipe):
@@ -86,9 +86,14 @@ class AdvancedUserRecipe1299694372(BasicNewsRecipe):
             # We probably have one the content in a second body tag
             bodies = soup.findAll("body")
             if len(bodies) > 1:
-                wordCount = len(re.split("\W+", str(bodies[1]))
-        article.title  = "%s (%s words)" % \
-          (soup.find('title').contents[0].strip(), wordCount)
+                wordCount = len(re.split("\W+", str(bodies[1])))
+
+        # Escape character references or entities with HTMLParser.unescape
+        #  Use http://effbot.org/zone/re-sub.htm#unescape-html post 2.6
+        #  because unescape is deprecated
+        pars = HTMLParser.HTMLParser()
+        article.title  = "[%s words] %s" % \
+          (wordCount, pars.unescape(soup.find('title').contents[0].strip()))
 
     def postprocess_html(self, soup, first_fetch):
         if self.add_title:
