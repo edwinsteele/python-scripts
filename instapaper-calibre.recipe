@@ -2,53 +2,42 @@ import HTMLParser, re
 from calibre.web.feeds.news import BasicNewsRecipe
 
 class AdvancedUserRecipe1299694372(BasicNewsRecipe):
-    title                             = u'Alt Instapaper'
-    __author__                  = 'Darko Miletic, Stanislav Khromov'
-    publisher                     = 'Instapaper.com'
-    category                      = 'info, custom, Instapaper'
-    feeds = []
+    # Derived from upstream recipe at:
+    # http://bazaar.launchpad.net/~kovid/calibre/trunk/view/head:/recipes/instapaper.recipe
+    # Original authors: Darko Miletic, Stanislav Khromov
+    title = u'Alternative Instapaper'
+    __author__ = 'Edwin Steele, Darko Miletic, Stanislav Khromov'
+    publisher = 'Instapaper.com'
+    category = 'info, custom, Instapaper'
 
-    #if all feeds are empty, no periodical will be generated
-    remove_empty_feeds = True
     # Add in a title from the article body in case it's not already there
     add_title = False
-
-    # - Recipe configuration - #
-
-    #Set archive to True if you want to auto-archive items
-    archive    = False
     #Set include_liked to true if you want to include liked items in your feed.
-    #Warning: Please avoid enabling this in conjunction with auto-archive.
-    include_liked    = False
+    include_liked = False
     #Set to true if you want to reverse article order
     reverse_article_order = False
     #Set the maximum amount of articles you'd like to receive here
     max_articles_per_feed = 30
-
-    oldest_article        = 0
-    no_stylesheets        = True
-    remove_javascript     = True
-    remove_tags              = [
-        dict(name='div', attrs={'id':'text_controls_toggle'})
-        ,dict(name='script')
-        ,dict(name='div', attrs={'id':'text_controls'})
-        ,dict(name='div', attrs={'id':'editing_controls'})
-        ,dict(name='div', attrs={'class':'bar bottom'})
-        ,dict(name='div', attrs={'id':'controlbar_container'})
-        ,dict(name='div', attrs={'id':'footer'})
-         ]
-    use_embedded_content  = False
-    needs_subscription    = True
-    INDEX                 = u'http://www.instapaper.com'
-    LOGIN                 = INDEX + u'/user/login'
+    # Oldest article in days
+    oldest_article = 0
+    no_stylesheets = True
+    remove_tags = [
+        dict(name='div', attrs={'id':'text_controls_toggle'}), \
+        dict(name='script'), \
+        dict(name='div', attrs={'id':'text_controls'}), \
+        dict(name='div', attrs={'id':'editing_controls'}), \
+        dict(name='div', attrs={'class':'bar bottom'}), \
+        dict(name='div', attrs={'id':'controlbar_container'}), \
+        dict(name='div', attrs={'id':'footer'}), \
+		 ]
+    use_embedded_content = False
+    needs_subscription = True
+    INDEX = u'http://www.instapaper.com'
+    LOGIN = INDEX + u'/user/login'
     
+    feeds = [(u'Instapaper Unread', INDEX + u'/u')]
     if include_liked:
-        feeds = feeds+[(u'Instapaper Liked', INDEX + u'/starred')]
-
-    feeds = feeds+[(u'Instapaper Unread', INDEX + u'/u')]
-    feeds.reverse()
-    
-    cleanup_items = []
+        feeds.append((u'Instapaper Liked', INDEX + u'/starred'))
 
     def get_browser(self):
         br = BasicNewsRecipe.get_browser()
