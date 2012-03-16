@@ -26,13 +26,6 @@ class AdvancedUserRecipe1299694372(BasicNewsRecipe):
     #Set the maximum amount of articles you'd like to receive here
     max_articles_per_feed = 30
 
-    #Set your own custom folders here, simply re-paste the example line below for each new folder you need
-    #Example:
-    #feeds+=[(u'My custom folder', u'http://www.instapaper.com/u/folder/1321400/my-custom-folder')]
-    #feeds+=[(u'Long-term reading', u'http://www.instapaper.com/u/folder/1232089/long-term-reading')]
-
-    # - End of recipe configuration - #
-
     oldest_article        = 0
     no_stylesheets        = True
     remove_javascript     = True
