@@ -1,14 +1,44 @@
 slashdotRssCreator.cgi: full text rss feeds from slashdot. Likely to have
   broken if slashdot has altered their front page since it was written.
+  Libraries required: BeautifulSoup v3, pytz, PyRSS2Gen.
 
 instapaper-calibre.recipe: An enhanced calibre (http://calibre-ebook.com)
   recipe for converting an instapaper reading list into an ePub e-book.
   Built on the standard calibre instapaper recipe.
+  Libraries required: Only those that are already packaged with calibre.
 
 bookFinder.py: Performs searches for books in local libraries from a
   consistent, commandline interface. I implemented the Penrith City library
   and Blue Mountains Council Library search routines (and I'm pretty sure
   that BMCC has recently brought their interface out of the 90s and broken
   compatibility with this script).
-  Requires BeautifulSoup library.
+  Libraries required: BeautifulSoup v3.
   
+e.g.
+$ ./bookFinder.py -s penrith -t "Harry Potter and the Goblet of Fire" -a rowling
+Searching Penrith for Harry Potter and the Goblet of Fire (rowling) - found 4 matches.
+Harry Potter and the Goblet of Fire / by  J.K. Rowling and read by Stephen Fry
+- At St Marys (On shelf)
+- On loan (Due: 2012-03-14)
+Harry Potter and the Goblet of Fire / by J. K. Rowling
+- On loan (Due: 2012-03-26)
+- On loan (Due: 2011-11-20)
+- On loan (Due: 2004-12-21)
+Harry Potter and the Goblet of Fire / by J. K. Rowling
+- At Emu Plains (On shelf)
+- On loan (Due: 2012-03-30)
+- At St Clair (On shelf)
+- On loan (Due: 2012-03-05)
+- On loan (Due: 2012-03-04)
+- On loan (Due: 2012-04-05)
+- On loan (Due: 2012-04-02)
+- On loan (Due: 2012-02-07)
+- On loan (Due: 2009-04-15)
+- On loan (Due: 2004-10-01)
+- On loan (Due: 2004-05-07)
+- On loan (Due: 2005-06-09)
+- On loan (Due: 2002-01-13)
+- On loan (Due: 2003-11-20)
+Harry Potter and the Goblet of Fire / by J. K. Rowling and Jim Dale
+- On loan (Due: 2012-03-23)
+- On loan (Due: 2012-03-25)
