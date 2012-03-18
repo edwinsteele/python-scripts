@@ -4,3 +4,11 @@ slashdotRssCreator.cgi: full text rss feeds from slashdot. Likely to have
 instapaper-calibre.recipe: An enhanced calibre (http://calibre-ebook.com)
   recipe for converting an instapaper reading list into an ePub e-book.
   Built on the standard calibre instapaper recipe.
+
+bookFinder.py: Performs searches for books in local libraries from a
+  consistent, commandline interface. I implemented the Penrith City library
+  and Blue Mountains Council Library search routines (and I'm pretty sure
+  that BMCC has recently brought their interface out of the 90s and broken
+  compatibility with this script).
+  Requires BeautifulSoup library.
+  
