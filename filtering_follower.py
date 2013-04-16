@@ -1,22 +1,47 @@
-import time
+import collections
+import datetime
 import os
 import shlex
-import datetime
+import time
 
-__author__ = 'esteele'
+
+# dictionaries will get better performance...
+# see: http://stackoverflow.com/questions/2646157/what-is-the-fastest-to-access-struct-like-object-in-python
+Aggregation = collections.namedtuple(
+    "aggregation",
+    ["aggregation_datetime", "count", "fifth", "median", "ninety_fifth"],
+)
 
 # Sample logs obtained from
 #  http://docs.splunk.com/Documentation/Splunk/latest/Tutorial/GetthesampledataintoSplunk
 
-NO_VALUE = None
-STILL_AGGREGATING = None
+URL_TO_MATCH = "/flower_store/enter_order_information.screen"
+BASE_LOG_DIRECTORY = "/Users/esteele/Downloads/Sampledata/"
+LOG = BASE_LOG_DIRECTORY + "apache1.splunk.com/access_combined.log"
+RESPONSE_SIZE = "response_size"
+RESPONSE_TIME = "response_time"
+REQUEST_DATETIME = "request_datetime"
+
+
+def handle_aggregation(agg):
+    if agg and agg[RESPONSE_SIZE].count > 0:
+        print "%s (%s readings): %s (5th), %s (median), %s (95th)" % \
+              (agg[RESPONSE_SIZE].aggregation_datetime,
+               agg[RESPONSE_SIZE].count,
+               agg[RESPONSE_SIZE].fifth,
+               agg[RESPONSE_SIZE].median,
+               agg[RESPONSE_SIZE].ninety_fifth)
 
 
 def fifth_median_ninetyfifth(sequence):
-    sequence.sort()
-    return sequence[int(len(sequence) * 0.05)], \
-        sequence[int(len(sequence) * 0.5)], \
-        sequence[int(len(sequence) * 0.95)]
+    if sequence:
+        sequence.sort()
+        return sequence[int(len(sequence) * 0.05)], \
+            sequence[int(len(sequence) * 0.5)], \
+            sequence[int(len(sequence) * 0.95)]
+    else:
+        # These values are undefined when the sequence is empty
+        return [None, None, None]
 
 
 def follow(fd, from_start, timeout_secs=5):
@@ -52,35 +77,39 @@ def filtered_interpreted_follow(fd, from_start, match_url):
         # [13/Apr/2013:23:58:10]
         request_datetime = datetime.datetime.strptime(fields[3],
                                                       "[%d/%b/%Y:%H:%M:%S]")
-        yield request_datetime, response_size_bytes, response_time_usecs
+        yield {REQUEST_DATETIME: request_datetime,
+               RESPONSE_SIZE: response_size_bytes,
+               RESPONSE_TIME: response_time_usecs
+               }
 
 
 def aggregate_by_hour():
-    response_sizes = []
-    request_date_hour = None
-    last_request_date_hour = count = fifth = median = ninety_fifth = None
+    metrics = {RESPONSE_SIZE: [], RESPONSE_TIME: []}
+    last_request_period = None
+    aggregated_metrics = {}
+
+    # We don't have any metrics yet but need to accept the first
+    request_fields = yield aggregated_metrics
 
     while True:
-        request_datetime, response_size_bytes, response_time_usecs = \
-            yield last_request_date_hour, count, fifth, median, ninety_fifth
-        last_request_date_hour = request_date_hour
-        # Nerf the minutes, seconds and micros so that we're just looking at
-        # hourly times. Could perhaps use datetime.resolution
-        request_date_hour = request_datetime.replace(minute=0, second=0, microsecond=0)
-        if request_date_hour == last_request_date_hour:
-            response_sizes.append(response_size_bytes)
-            count = fifth = median = ninety_fifth = STILL_AGGREGATING
+        # Nerf the mins, secs & micros so we're just looking at hourly times.
+        this_request_period = request_fields[REQUEST_DATETIME].replace(minute=0, second=0, microsecond=0)
+        if this_request_period == last_request_period:
+            metrics[RESPONSE_SIZE].append(request_fields[RESPONSE_SIZE])
+            aggregated_metrics = {}
         else:
-            if response_sizes:
-                fifth, median, ninety_fifth = fifth_median_ninetyfifth(response_sizes)
-                count = len(response_sizes)
+            # Flush the metrics for the previous time period
+            fifth, median, ninety_fifth = \
+                fifth_median_ninetyfifth(metrics[RESPONSE_SIZE])
+            count = len(metrics[RESPONSE_SIZE])
+            aggregated_metrics[RESPONSE_SIZE] = Aggregation(
+                last_request_period, count, fifth, median, ninety_fifth)
+            # Start the metrics for the new time period
+            metrics[RESPONSE_SIZE] = [request_fields[RESPONSE_SIZE]]
 
-            response_sizes = [response_size_bytes]
+        request_fields = yield aggregated_metrics
+        last_request_period = this_request_period
 
-
-URL_TO_MATCH = "/flower_store/enter_order_information.screen"
-BASE_LOG_DIRECTORY = "/Users/esteele/Downloads/Sampledata/"
-LOG = BASE_LOG_DIRECTORY + "apache1.splunk.com/access_combined.log"
 
 logfile = open(LOG)
 request_fields_from_log = filtered_interpreted_follow(logfile, True, URL_TO_MATCH)
@@ -88,13 +117,10 @@ aggregator = aggregate_by_hour()
 aggregator.send(None)
 
 for line_fields in request_fields_from_log:
-    request_date_hour, count, fifth, median, ninety_fifth = aggregator.send(line_fields)
-    if count != STILL_AGGREGATING:
-        print "%s (%s readings): %s (5th), %s (median), %s (95th)" % (request_date_hour, count, fifth, median, ninety_fifth)
+    handle_aggregation(aggregator.send(line_fields))
 else:
-    request_date_hour, count, fifth, median, ninety_fifth = aggregator.send((datetime.datetime.max, None, None))
-    print "%s (%s readings): %s (5th), %s (median), %s (95th)" % (request_date_hour, count, fifth, median, ninety_fifth)
+    # flush the last set of values
+    handle_aggregation(aggregator.send({REQUEST_DATETIME: datetime.datetime.max,
+                                        RESPONSE_SIZE: None,
+                                        RESPONSE_TIME: None}))
     print "Final reading done"
-
-
-# Must do aggregator.send((None, None, None)) to flush the last set of values
