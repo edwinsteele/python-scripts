@@ -21,16 +21,19 @@ LOG = BASE_LOG_DIRECTORY + "apache1.splunk.com/access_combined.log"
 RESPONSE_SIZE = "response_size"
 RESPONSE_TIME = "response_time"
 REQUEST_DATETIME = "request_datetime"
+METRICS = (RESPONSE_SIZE, RESPONSE_TIME)
 
 
 def handle_aggregation(agg):
-    if agg and agg[RESPONSE_SIZE].count > 0:
-        print "%s (%s readings): %s (5th), %s (median), %s (95th)" % \
-              (agg[RESPONSE_SIZE].aggregation_datetime,
-               agg[RESPONSE_SIZE].count,
-               agg[RESPONSE_SIZE].fifth,
-               agg[RESPONSE_SIZE].median,
-               agg[RESPONSE_SIZE].ninety_fifth)
+    for metric in METRICS:
+        if agg and agg[metric].count > 0:
+            print "%s %s (%s readings): %s (5th), %s (median), %s (95th)" % \
+                  (agg[metric].aggregation_datetime,
+                   metric,
+                   agg[metric].count,
+                   agg[metric].fifth,
+                   agg[metric].median,
+                   agg[metric].ninety_fifth)
 
 
 def fifth_median_ninetyfifth(sequence):
@@ -87,25 +90,25 @@ def aggregate_by_hour():
     metrics = {RESPONSE_SIZE: [], RESPONSE_TIME: []}
     last_request_period = None
     aggregated_metrics = {}
-
     # We don't have any metrics yet but need to accept the first
     request_fields = yield aggregated_metrics
 
     while True:
         # Nerf the mins, secs & micros so we're just looking at hourly times.
-        this_request_period = request_fields[REQUEST_DATETIME].replace(minute=0, second=0, microsecond=0)
-        if this_request_period == last_request_period:
-            metrics[RESPONSE_SIZE].append(request_fields[RESPONSE_SIZE])
-            aggregated_metrics = {}
-        else:
-            # Flush the metrics for the previous time period
-            fifth, median, ninety_fifth = \
-                fifth_median_ninetyfifth(metrics[RESPONSE_SIZE])
-            count = len(metrics[RESPONSE_SIZE])
-            aggregated_metrics[RESPONSE_SIZE] = Aggregation(
-                last_request_period, count, fifth, median, ninety_fifth)
-            # Start the metrics for the new time period
-            metrics[RESPONSE_SIZE] = [request_fields[RESPONSE_SIZE]]
+        this_request_period = request_fields[REQUEST_DATETIME].\
+            replace(minute=0, second=0, microsecond=0)
+        for metric in metrics:
+            if this_request_period == last_request_period:
+                metrics[metric].append(request_fields[metric])
+                aggregated_metrics = {}
+            else:
+                # Flush the metric value for the previous time period
+                aggregated_metrics[metric] = Aggregation(
+                    last_request_period,
+                    len(metrics[metric]),
+                    *fifth_median_ninetyfifth(metrics[metric]))
+                # Start the metric value for the new time period
+                metrics[metric] = [request_fields[metric]]
 
         request_fields = yield aggregated_metrics
         last_request_period = this_request_period
