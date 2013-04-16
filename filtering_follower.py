@@ -67,8 +67,8 @@ def follow(fd, from_start, timeout_secs=5):
         print "Timeout on file %s" % (fd.name,)
 
 
-def filtered_interpreted_follow(fd, from_start, match_url):
-    for line in follow(fd, from_start):
+def filtered_interpreted_follow(follower, match_url):
+    for line in follower:
         fields = shlex.split(line)
         # GET /flower_store/enter_order_information.screen HTTP/1.1
         request_url = fields[4].split(" ")[1]
@@ -115,7 +115,8 @@ def aggregate_by_hour():
 
 
 logfile = open(LOG)
-request_fields_from_log = filtered_interpreted_follow(logfile, True, URL_TO_MATCH)
+f = follow(logfile, True)
+request_fields_from_log = filtered_interpreted_follow(f, URL_TO_MATCH)
 aggregator = aggregate_by_hour()
 aggregator.send(None)
 
