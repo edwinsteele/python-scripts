@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import collections
 import datetime
 import os
@@ -27,13 +29,13 @@ METRICS = (RESPONSE_SIZE, RESPONSE_TIME)
 def handle_aggregation(agg):
     for metric in METRICS:
         if agg and agg[metric].count > 0:
-            print "%s %s (%s readings): %s (5th), %s (median), %s (95th)" % \
+            print("%s %s (%s readings): %s (5th), %s (median), %s (95th)" %
                   (agg[metric].aggregation_datetime,
                    metric,
                    agg[metric].count,
                    agg[metric].fifth,
                    agg[metric].median,
-                   agg[metric].ninety_fifth)
+                   agg[metric].ninety_fifth))
 
 
 def fifth_median_ninetyfifth(sequence):
@@ -64,7 +66,7 @@ def follow(fd, from_start, timeout_secs=5):
             secs_since_last_line = 0
             yield line
     else:
-        print "Timeout on file %s" % (fd.name,)
+        print("Timeout on file %s" % (fd.name,))
 
 
 def filtered_interpreted_follow(follower, match_url):
@@ -127,4 +129,4 @@ else:
     handle_aggregation(aggregator.send({REQUEST_DATETIME: datetime.datetime.max,
                                         RESPONSE_SIZE: None,
                                         RESPONSE_TIME: None}))
-    print "Final reading done"
+    print("Final reading done")
