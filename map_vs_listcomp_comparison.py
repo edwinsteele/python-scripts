@@ -13,27 +13,27 @@ def time_function_and_print(f, setup="pass"):
            ", ".join(["%.3f" % (f,) for f in durations_per_loop_usec])))
 
 
-def a():
+def run_map():
     return set(map(str.strip, ['wat '] * 200))
 
 
-def b():
+def run_listcomp():
     return set([s.strip() for s in ['wat '] * 200])
 
 
-def a_empty_list():
+def run_map_empty_list():
     return set(map(str.strip, []))
 
 
-def b_empty_list():
+def run_listcomp_empty_list():
     return set([s.strip() for s in []])
 
 
-def a_empty_list_with_construction():
+def run_map_empty_list_with_construction():
     ['wat '] * 200
     return set(map(str.strip, []))
 
-def b_empty_list_with_construction():
+def run_listcomp_empty_list_with_construction():
     ['wat '] * 200
     return set([s.strip() for s in []])
 
@@ -47,15 +47,15 @@ def noop_with_lookup(s):
     return s
 
 
-def a_noop():
+def run_map_noop():
     return set(map(noop, ['wat '] * 200))
 
 
-def b_noop():
+def run_listcomp_noop():
     return set([noop(s) for s in ['wat '] * 200])
 
 
-def b_noop_with_lookup():
+def run_listcomp_noop_with_lookup():
     return set([noop_with_lookup(s) for s in ['wat '] * 200])
 
 
@@ -85,9 +85,9 @@ if __name__ == "__main__":
 
 
 if __name__ == "__main__":
-    #print("a()")
+    #print("run_map()")
     #dis.dis(a)
-    #print("b()")
+    #print("run_listcomp()")
     #dis.dis(b)
     compare()
     die
