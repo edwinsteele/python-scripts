@@ -11,7 +11,7 @@ class Trip(object):
         self.start_loc_int = -1
         self.start_loc_str = "unknown"
         self.location = "unknown"
-        self.alert = "None"
+        self.alert = None
         self.offset_tuples = []
 
     def populate_estimated_arrival_times(self):
@@ -37,29 +37,50 @@ class Trip(object):
     def estimate_delay_at_boarding_station(self):
         possible_delay_tuples = list(itertools.dropwhile(
             lambda x: x[0] < self.est_arrival_earliest, self.offset_tuples))
-        print "Est Arrival: %s - %s, Possible delays: %s" %\
-              (self.est_arrival_earliest,
-               self.est_arrival_latest,
-               list(possible_delay_tuples),)
+        #print "Est Arrival: %s - %s, Possible delays: %s" %\
+        #      (self.est_arrival_earliest,
+        #       self.est_arrival_latest,
+        #       list(possible_delay_tuples),)
         # The first delay number will be close enough, so let's use that
         if possible_delay_tuples:
             return possible_delay_tuples[0][1]
         else:
             return 0
 
+    def delay_description(self):
+        estimated_delay = self.estimate_delay_at_boarding_station()
+        if estimated_delay:
+            return "running %sm late" % (estimated_delay,)
+        else:
+            return "on-time"
+
     def short_summary(self):
+        if not self.is_of_interest():
+            s = ""
+        else:
+            s = "%s from %s (%s). Currently at %s." % \
+                (self.start_time_str,
+                self.start_loc_str,
+                self.delay_description(),
+                self.location)
+            if self.alert:
+                s += " Alert: %s" % (self.alert,)
+        return s
+
+    def full_summary(self):
         if not self.is_of_interest():
             s = "[Out Of Schedule] "
         else:
             s = ""
-        s += "Trip %s from %s @ %s. Currently at %s. Alert: %s" % \
-             (tripId,
-              t.start_loc_str,
-              t.start_time_str,
-              t.location,
-              t.alert)
-        return s
 
+        s += "Trip %s. %s from %s (%s). Currently at %s. Alert: %s" % \
+            (self.trip_id,
+             self.start_time_str,
+             self.start_loc_str,
+             self.delay_description(),
+             self.location,
+             self.alert)
+        return s
 
 ROUTE_FROM_CEN = "CR_bm_d"
 ROUTE_TO_CEN = "CR_bm_u"
@@ -67,7 +88,7 @@ ROUTE_TO_CEN = "CR_bm_u"
 # 5am  (should fall neatly between the 4:39am and 5:24am)
 FIRST_DEPARTURE_TIME = datetime.timedelta(hours=5)
 # Will catch the 6:24am but not the 6:40am)
-LAST_DEPARTURE_TIME = datetime.timedelta(hours=6, minutes=35)
+LAST_DEPARTURE_TIME = datetime.timedelta(hours=9, minutes=35)
 
 # LIT-BLX 91-104 minutes
 LIT_TO_BLX_DURATION_MIN = datetime.timedelta(hours=1, minutes=31)
@@ -93,12 +114,6 @@ stop_ids = {
 
 BASE_URL = "http://realtime.grofsoft.com/tripview/realtime?routes=%s&type=dtva"
 DIRECTION = ROUTE_TO_CEN
-
-r = requests.get(BASE_URL % (DIRECTION,))
-j = r.json()
-
-print "Retrieved at: %s" % \
-      (datetime.datetime.fromtimestamp(j["timestamp"]).ctime(),)
 
 
 def extract_trip(j, trip_id):
@@ -140,15 +155,29 @@ def extract_trip(j, trip_id):
     t.populate_estimated_arrival_times()
     return t
 
-# Save the realtime data for troubleshooting and verification
-with open("/Users/esteele/realtime.json", "w") as f:
-    f.write(r.text)
 
-# Trains only appear in the vehicles list once they have actually departed.
-# Trains that are past their departure time ("start") but have not left their
-#  origin are not listed in vehicles until they've actually left the station.
-for tripId in [v["tripId"] for v in j["vehicles"] if v["route"] == DIRECTION]:
-    t = extract_trip(j, tripId)
-    print t.short_summary()
-    estimated_delay = t.estimate_delay_at_boarding_station()
+if __name__ == "__main__":
+    r = requests.get(BASE_URL % (DIRECTION,))
+    j = r.json()
 
+    print "Retrieved at: %s" % \
+          (datetime.datetime.fromtimestamp(j["timestamp"]).ctime(),)
+
+    # Save the realtime data for troubleshooting and verification
+    with open("/Users/esteele/realtime.json", "w") as f:
+        f.write(r.text)
+
+    # Trains only appear in the vehicles list once they have actually departed.
+    # Trains that are past their departure time ("start") but have not left their
+    #  origin are not listed in vehicles until they've actually left the station.
+    trips = []
+    for tripId in [v["tripId"] for v in j["vehicles"] if v["route"] == DIRECTION]:
+        trips.append(extract_trip(j, tripId))
+
+    print "------"
+    for t in trips:
+        if t.is_of_interest():
+            print t.short_summary()
+    print "------"
+    for t in trips:
+        print t.full_summary()
