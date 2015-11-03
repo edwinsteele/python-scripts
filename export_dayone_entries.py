@@ -8,11 +8,14 @@ the default, "Journal_dayone".
 Requires python 2.7 and the external pytz module.
 """
 import argparse
+import codecs
 import glob
+import collections
 import plistlib
 import pytz
 import os
 import string
+import sys
 
 ENTRY_GLOB_STR = os.path.join(os.environ["HOME"],
                               "Library",
@@ -22,6 +25,18 @@ ENTRY_GLOB_STR = os.path.join(os.environ["HOME"],
                               "Journal_dayone",
                               "entries",
                               "*.doentry")
+
+Entry = collections.namedtuple(
+    'Entry', [
+        "title",
+        "filename",
+        "datestr",
+        "tagstr",
+        "latitude",
+        "longitude",
+        "text"
+    ]
+)
 
 
 def dayone_entry_files():
@@ -63,7 +78,7 @@ def generate_slug_from_title(title):
     return slug
 
 
-def convert_one_file(input_file):
+def extract_one_file(input_file):
     p = plistlib.readPlist(input_file)
     authored_tz = pytz.timezone(p["Time Zone"])
     # Creation date stored in zulu time
@@ -77,27 +92,75 @@ def convert_one_file(input_file):
     else:
         filename = "%s.md" % \
             (creation_date_local.strftime("%Y%m%d-%H%M"),)
-    print "--- FILE: %s ---" % (filename,)
-    if title:
-        print "Title: %s" % (title,)
-    print "Date: %s" % (creation_date_local.ctime(),)
     if "Tags" in p:
-        print "Tags: %s" % (",".join(sorted(p["Tags"])),)
-    if "Location" in p:
-        print "Latitude: %s" % (p["Location"]["Latitude"],)
-        print "Longitude: %s" % (p["Location"]["Longitude"],)
+        tagstr = ",".join(sorted(p["Tags"]))
+    else:
+        tagstr = ""
 
-    print ""
-    print p["Entry Text"].split("\n")[0]
+    if "Location" in p:
+        lat = p["Location"]["Latitude"]
+        lon = p["Location"]["Longitude"]
+    else:
+        lat = lon = None
+
+    return Entry(title,
+                 filename,
+                 creation_date_local.ctime(),
+                 tagstr,
+                 lat,
+                 lon,
+                 p["Entry Text"])
+
+
+def convert_entry_to_str(entry):
+    # Metadata lines have two trailing spaces to help with formatting
+    # per: https://github.com/fletcher/MultiMarkdown/wiki/MultiMarkdown-Syntax-Guide
+    lines = []
+    if entry.title:
+        lines.append("Title: %s  " % (entry.title,))
+    lines.append("Date: %s  " % (entry.datestr,))
+    if entry.tagstr:
+        lines.append("Tags: %s  " % (entry.tagstr,))
+    if entry.latitude:
+        lines.append("Latitude: %s  " % (entry.latitude,))
+    if entry.longitude:
+        lines.append("Longitude: %s  " % (entry.longitude,))
+    lines.append("")
+    lines.append(entry.text)
+    return "\n".join(lines)
+
+
+def write_one_entry(entry, output_directory):
+    output_file = os.path.join(output_directory, entry.filename)
+    if os.path.exists(output_file):
+        print "Error: Entry already exists %s. " \
+              "Delete it and try again." % (output_file,)
+        sys.exit(2)
+    print "Writing: %s" % (output_file,)
+    with codecs.open(output_file, "w", encoding="utf-8") as f:
+        f.write(convert_entry_to_str(entry))
 
 
 def main():
     parser = argparse.ArgumentParser(
         description="Convert DayOne entries into Markdown files.")
     parser.add_argument("output_directory")
-    parser.parse_args()
+    args = parser.parse_args()
+
+    # Check output directory is useable.
+    if os.path.exists(args.output_directory):
+        if not os.path.isdir(args.output_directory):
+            print "Error: %s exists but is not a directory. " \
+                  "Fix this and try again." % (args.output_directory,)
+            sys.exit(1)
+    else:
+        print "Error: Directory %s does not exist. " \
+              "Create it and try again." % (args.output_directory,)
+        sys.exit(1)
+
     for entry_file in dayone_entry_files():
-        convert_one_file(entry_file)
+        one_entry = extract_one_file(entry_file)
+        write_one_entry(one_entry, args.output_directory)
 
 if __name__ == "__main__":
     main()
