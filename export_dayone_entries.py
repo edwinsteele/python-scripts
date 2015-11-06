@@ -47,7 +47,6 @@ def generate_title(document_text):
     first_line = document_text.split("\n")[0]
     # If we have something that looks like a header, use it as a starting
     #  point for a title, otherwise there's no title
-    # otherwise don't set a title
     if first_line.startswith("#"):
         # Strip heading indicators and whitespace inside the heading indicators
         title = first_line.lstrip("#").strip()
