@@ -7,8 +7,8 @@ from pyinstapaper.instapaper import Instapaper
 
 
 # ARCHIVE_LOCATION = "/Users/esteele/Documents/ArchivedArticles"
-ARCHIVE_LOCATION = "/Users/esteele/Library/Mobile\
-        Documents/com~apple~CloudDocs/Articles"
+ARCHIVE_LOCATION = "/Users/esteele/Library/Mobile Documents/" \
+                   "com~apple~CloudDocs/Articles/ArchivedArticles"
 INSTAPAPER_ARTICLE_TEMPLATE = "https://www.instapaper.com/read/%s"
 
 need_manual_archiving = []
